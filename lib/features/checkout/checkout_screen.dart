@@ -185,6 +185,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     ]);
     ref.invalidate(lastCheckoutProvider);
 
+    // Online methods: pay through SSLCommerz before touching the cart. The
+    // server only marks the orders paid after verifying with the gateway.
+    if (const {'card', 'mobile_banking', 'online'}.contains(_payment)) {
+      final paid = await _payOnline(repo, ok.map((r) => r.order!.id).toList());
+      if (!mounted) return;
+      if (!paid) {
+        setState(() => _placing = false);
+        return;
+      }
+    }
+
     final cart = ref.read(cartProvider.notifier);
     for (final r in ok) {
       for (final i in r.group.items) {
@@ -199,6 +210,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     }
     context.go(Paths.orderSuccess, extra: ok.map((r) => r.order!).toList());
+  }
+
+  /// Returns true only when the server confirms the payment as `paid`.
+  Future<bool> _payOnline(OrderRepository repo, List<String> orderIds) async {
+    try {
+      final session = await repo.initPayment(orderIds);
+      if (!mounted) return false;
+      await context.push<bool>(Paths.payment, extra: session.paymentUrl);
+      if (!mounted) return false;
+      // Don't trust the WebView: ask the backend for the verified status.
+      final status = await repo.paymentStatus(session.tranId);
+      if (status == 'paid') return true;
+      if (!mounted) return false;
+      AppToast.show(
+        context,
+        message: status == 'review'
+            ? 'Payment received but needs review. Our team will contact you.'
+            : 'Payment was not completed, so the order was not placed. You were not charged.',
+        icon: PhosphorIconsFill.warningCircle,
+        tone: ToastTone.error,
+        bottomOffset: 110,
+      );
+      return false;
+    } catch (e) {
+      if (!mounted) return false;
+      AppToast.error(context, ApiException.from(e));
+      return false;
+    }
   }
 
   @override

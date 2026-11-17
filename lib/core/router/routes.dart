@@ -14,6 +14,7 @@ abstract final class Paths {
   static const search = '/search';
   static const checkout = '/checkout';
   static const orderSuccess = '/order-success';
+  static const payment = '/payment';
   static const login = '/login';
   static const register = '/register';
   static const becomeSeller = '/become-seller';

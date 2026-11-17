@@ -13,6 +13,7 @@ import '../../features/catalog/product_list_screen.dart';
 import '../../features/categories/explore_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
 import '../../features/checkout/order_success_screen.dart';
+import '../../features/checkout/payment_webview_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -98,6 +99,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => riseUpPage(key: state.pageKey, child: const SearchScreen()),
       ),
       GoRoute(path: Paths.checkout, builder: (context, state) => const CheckoutScreen()),
+      GoRoute(
+        path: Paths.payment,
+        builder: (context, state) => PaymentWebViewScreen(url: state.extra is String ? state.extra as String : ''),
+      ),
       GoRoute(
         path: Paths.orderSuccess,
         pageBuilder: (context, state) => riseUpPage(

@@ -13,6 +13,12 @@ class PlacedOrder {
   final String message;
 }
 
+class PaymentSession {
+  const PaymentSession({required this.tranId, required this.paymentUrl});
+  final String tranId;
+  final String paymentUrl;
+}
+
 class OrderRepository {
   OrderRepository(this._api);
   final ApiClient _api;
@@ -27,6 +33,20 @@ class OrderRepository {
       total: order.total,
       message: str(res['message'], 'Order placed'),
     );
+  }
+
+  /// Opens an SSLCommerz session for already-created orders. The amount is
+  /// computed by the server from the orders, never sent by the app.
+  Future<PaymentSession> initPayment(List<String> orderIds) async {
+    final res = await _api.post('/payments/sslcommerz/init', body: {'orderIds': orderIds, 'platform': 'mobile'});
+    final data = asJson(res['data']);
+    return PaymentSession(tranId: str(data['tranId'], ''), paymentUrl: str(data['paymentUrl'], ''));
+  }
+
+  /// Server-verified payment state: pending | paid | failed | cancelled | review.
+  Future<String> paymentStatus(String tranId) async {
+    final res = await _api.get('/payments/status/$tranId');
+    return str(asJson(res['data'])['status'], 'pending');
   }
 
   Future<Paged<Order>> list({int page = 1, String? status}) async {
